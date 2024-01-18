@@ -1,4 +1,5 @@
 from pyflink.table import *
+from pyflink.table.expressions import col
 from pyflink.ml.feature.onehotencoder import OneHotEncoder
 from pyflink.ml.feature.standardscaler import StandardScaler
 from pyflink.ml.feature.univariatefeatureselector import UnivariateFeatureSelector
@@ -40,6 +41,44 @@ table_env = StreamTableEnvironment.create(env)
 table_env.get_config().set("pipeline.jars", jar_files_str)
 table_env.get_config().set("parallelism.default", "4")
 
+# Kafka Config
+topic1 = "KSQLTABLEGROUPSTOCK"  # KSQLDB Table
+group = "flink-group-idx-stock-consumer"
+kafka_bootstrap_server = "localhost:19092,localhost:19093,localhost:19094"
+kafka_schema_server = "http://localhost:8282"
+offset = 'earliest-offset'  # Use earliest-offset OR latest-offset
+
+# Table API Kafka SQL TABLE MUST USE UPPERCASE COLUMN NAME
+table_env.execute_sql("CREATE TABLE flink_ksql_groupstock (" +
+                      "  `EVENT_TIME` TIMESTAMP(3) METADATA FROM 'timestamp', " +
+                      "  `STOCKID` STRING, " +
+                      "  `TICKER` STRING, " +
+                      "  `DATE` STRING, " +
+                      "  `OPEN` DOUBLE, " +
+                      "  `HIGH` DOUBLE, " +
+                      "  `LOW` DOUBLE, " +
+                      "  `CLOSE` DOUBLE, " +
+                      "  `VOLUME` BIGINT " +
+                      ") WITH (" +
+                      "  'connector' = 'kafka', " +
+                      "  'topic' = '" + topic1 + "', " +
+                      "  'properties.bootstrap.servers' = '" + kafka_bootstrap_server + "', " +
+                      "  'properties.group.id' = '" + group + "', " +
+                      "  'scan.startup.mode' = '" + offset + "', " +
+                      "  'value.format' = 'avro-confluent', " +
+                      "  'value.avro-confluent.url' = '" + kafka_schema_server + "' " +
+                      ")")
+
+# Define a query
+# table_input = table_env.sql_query("SELECT * FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2023-06%'") \
+#     .select(col("TICKER").alias("ticker"),
+#             col("DATE").alias("date"),
+#             col("OPEN").alias("open"),
+#             col("HIGH").alias("high"),
+#             col("LOW").alias("low"),
+#             col("CLOSE").alias("close"),
+#             col("VOLUME").alias("volume"))
+
 # Table API mongodb
 table_env.execute_sql("CREATE TABLE flink_mongodb_stock (" +
                       "  `id` STRING, " +
@@ -58,8 +97,6 @@ table_env.execute_sql("CREATE TABLE flink_mongodb_stock (" +
 
 # Define a query
 table_input = table_env.sql_query("SELECT * FROM flink_mongodb_stock WHERE `date` LIKE '%2023-06%'")
-# table_result1 = query1.execute()
-# table_result1.print()
 
 # Creates a StringIndexer object and initializes its parameters.
 string_indexer = StringIndexer() \
@@ -91,19 +128,11 @@ tickerSize = 0
 dateSize = 0
 field_names = one_hot_table.get_schema().get_field_names()
 for row in table_env.to_data_stream(one_hot_table).execute_and_collect():
-    # Assuming row is a pyflink Row object and has fields "tickerOneHot" and "dateOneHot"
     tickerVec = row[field_names.index("tickerOneHot")]  # Assuming this is a SparseVector
     dateVec = row[field_names.index("dateOneHot")]  # Assuming this is a SparseVector
-    # tickerVec = row[9]  # Assuming this is a SparseVector
-    # dateVec = row[10]  # Assuming this is a SparseVector
-
     tickerSize = len(tickerVec)
     dateSize = len(dateVec)
-
-    # If you want to print the sizes
     print(f"TickerOneHot Vec Size: {tickerSize}\tDateOneHot Vec Size: {dateSize}")
-
-    # Assuming you only want to process the first row
     break
 
 # Creates a VectorAssembler object and initializes its parameters.

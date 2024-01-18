@@ -1,4 +1,6 @@
 from pyflink.table import *
+from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
+from pyflink.table.expressions import col
 
 # Prepare your JAR file URIs
 jars_path = "D:/00%20Project/00%20My%20Project/Jars/Kafka%201.17/"
@@ -28,7 +30,10 @@ jar_files_str = ";".join(jar_files)
 
 # Set the configuration
 # table_env = TableEnvironment.create(EnvironmentSettings.in_batch_mode())  # for mongodb
-table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())  # for kafka
+# table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())  # for kafka
+env = StreamExecutionEnvironment.get_execution_environment()
+env.set_runtime_mode(RuntimeExecutionMode.STREAMING)
+table_env = StreamTableEnvironment.create(env)
 table_env.get_config().set("pipeline.jars", jar_files_str)
 table_env.get_config().set("parallelism.default", "4")
 
@@ -110,6 +115,16 @@ table_env.execute_sql("CREATE TABLE flink_ksql_groupcompany (" +
                       ")")
 
 # Define a query
+table_output1 = table_env.sql_query("SELECT * FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2023-06%'") \
+    .select(col("TICKER").alias("ticker"),
+            col("DATE").alias("date"),
+            col("OPEN").alias("open"),
+            col("HIGH").alias("high"),
+            col("LOW").alias("low"),
+            col("CLOSE").alias("close"),
+            col("VOLUME").alias("volume"))
+
+# Define a query
 table_output2 = table_env.sql_query("SELECT " +
                                     "  `STOCKID`," +
                                     "  table1.`TICKER`," +
@@ -128,11 +143,18 @@ table_output2 = table_env.sql_query("SELECT " +
                                     )
 
 # Execute Table
-table_result2 = table_output2.execute()
-with table_result2.collect() as results:
-    for row in results:
-        print(str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " + str(row[4]) + " ---- " + str(
-            row[7]))
+table_result1 = table_output1.execute()
+# table_result1.print()
+# result = table_env.to_data_stream(table_output1).execute_and_collect().next()
+# print(str(result[0]) + " ---- " + str(result[1]) + " ---- " + str(result[2]))
+# for row in table_env.to_data_stream(table_output1).execute_and_collect():
+#     print("Datastream: " + str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
+#           str(row[4]) + " ---- " + str(row[7]))
+# table_result2 = table_output2.execute()
+for row in table_result1.collect():
+    print(str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
+          str(row[4]) + " ---- " + str(row[7]))
+    break
 
 # table_result1 = query1.execute()
 # table_result1.print()
