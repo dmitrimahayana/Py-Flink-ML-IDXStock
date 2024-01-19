@@ -3,34 +3,26 @@ from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
 from pyflink.table.expressions import col
 
 # Prepare your JAR file URIs
-jars_path = "D:/00%20Project/00%20My%20Project/Jars/Kafka%201.17/"
+jars_path = "D:/00%20Project/00%20My%20Project/Jars/Kafka%201.18/"
 jar_files = [
-    "file:///" + jars_path + "avro-1.11.0.jar",
-    "file:///" + jars_path + "flink-avro-1.17.1.jar",
-    "file:///" + jars_path + "flink-avro-confluent-registry-1.17.1.jar",
-    "file:///" + jars_path + "flink-sql-connector-kafka-1.17.1.jar",
-    "file:///" + jars_path + "flink-sql-connector-mongodb-1.0.1-1.17.jar",
+    "file:///" + jars_path + "avro-1.11.3.jar",
+    "file:///" + jars_path + "bson-4.7.2.jar",
+    "file:///" + jars_path + "flink-avro-1.18.0.jar",
+    "file:///" + jars_path + "flink-avro-confluent-registry-1.18.0.jar",
+    "file:///" + jars_path + "flink-connector-mongodb-1.0.2-1.17.jar",
+    "file:///" + jars_path + "flink-sql-connector-kafka-3.0.2-1.18.jar",
     "file:///" + jars_path + "guava-30.1.1-jre.jar",
     "file:///" + jars_path + "jackson-annotations-2.12.5.jar",
     "file:///" + jars_path + "jackson-core-2.12.5.jar",
     "file:///" + jars_path + "jackson-databind-2.12.5.jar",
-    "file:///" + jars_path + "kafka-clients-3.2.3.jar",
-    "file:///" + jars_path + "kafka-schema-registry-client-7.4.0.jar",
-    # "file:///" + jars_path + "bson-4.7.2.jar",
-    # "file:///" + jars_path + "flink-connector-files-1.17.1.jar",
-    # "file:///" + jars_path + "flink-connector-kafka-1.17.1.jar",
-    # "file:///" + jars_path + "flink-connector-mongodb-1.0.1-1.17.jar",
-    # "file:///" + jars_path + "flink-ml-uber-1.17-2.3.0.jar",
-    # "file:///" + jars_path + "flink-table-runtime-1.17.1.jar",
-    # "file:///" + jars_path + "mongodb-driver-core-4.7.2.jar",
-    # "file:///" + jars_path + "mongodb-driver-sync-4.7.2.jar",
-    # "file:///" + jars_path + "statefun-flink-core-3.2.0.jar",
+    "file:///" + jars_path + "kafka-clients-3.6.0.jar",
+    "file:///" + jars_path + "kafka-schema-registry-client-7.5.0.jar",
+    "file:///" + jars_path + "mongodb-driver-sync-4.7.2.jar",
+    "file:///" + jars_path + "mongodb-driver-core-4.7.2.jar",
 ]
 jar_files_str = ";".join(jar_files)
 
 # Set the configuration
-# table_env = TableEnvironment.create(EnvironmentSettings.in_batch_mode())  # for mongodb
-# table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())  # for kafka
 env = StreamExecutionEnvironment.get_execution_environment()
 env.set_runtime_mode(RuntimeExecutionMode.STREAMING)
 table_env = StreamTableEnvironment.create(env)
@@ -62,11 +54,11 @@ table_env.execute_sql("CREATE TABLE flink_mongodb_stock (" +
 #                               ") WHERE row_num <= 10 AND `date` = '2023-07-28'")
 
 # Define a query
-table_output1 = table_env.sql_query("SELECT * FROM flink_mongodb_stock LIMIT 10")
+table_output = table_env.sql_query("SELECT * FROM flink_mongodb_stock LIMIT 10")
 
 # Convert to dataframe
-df_mongodb = table_output1.to_pandas()
-print(df_mongodb.head(10))
+df_mongodb = table_output.limit(5).to_pandas()
+print("MongoDB:", df_mongodb)
 
 # Kafka Config
 topic1 = "KSQLTABLEGROUPSTOCK"  # KSQLDB Table
@@ -115,14 +107,15 @@ table_env.execute_sql("CREATE TABLE flink_ksql_groupcompany (" +
                       ")")
 
 # Define a query
-table_output1 = table_env.sql_query("SELECT * FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2023-06%'") \
-    .select(col("TICKER").alias("ticker"),
-            col("DATE").alias("date"),
-            col("OPEN").alias("open"),
-            col("HIGH").alias("high"),
-            col("LOW").alias("low"),
-            col("CLOSE").alias("close"),
-            col("VOLUME").alias("volume"))
+# table_output1 = table_env.sql_query("SELECT * FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2023-06-2%'") \
+    # .select(col("TICKER").alias("ticker"),
+    #         col("DATE").alias("date"),
+    #         col("OPEN").alias("open"),
+    #         col("HIGH").alias("high"),
+    #         col("LOW").alias("low"),
+    #         col("CLOSE").alias("close"),
+    #         col("VOLUME").alias("volume"))
+table_output1 = table_env.sql_query("SELECT `STOCKID`, `DATE`, `TICKER`, `CLOSE` FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2024-01%'")
 
 # Define a query
 table_output2 = table_env.sql_query("SELECT " +
@@ -144,20 +137,15 @@ table_output2 = table_env.sql_query("SELECT " +
 
 # Execute Table
 table_result1 = table_output1.execute()
-# table_result1.print()
-# result = table_env.to_data_stream(table_output1).execute_and_collect().next()
-# print(str(result[0]) + " ---- " + str(result[1]) + " ---- " + str(result[2]))
+table_result1.print()
 # for row in table_env.to_data_stream(table_output1).execute_and_collect():
 #     print("Datastream: " + str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
-#           str(row[4]) + " ---- " + str(row[7]))
+#           str(row[5]) + " ---- " + str(row[6]))
+# break
+# df_mongodb = table_output1.limit(100).to_pandas()
+# print("Dataframe: ", df_mongodb.head(10))
 # table_result2 = table_output2.execute()
-for row in table_result1.collect():
-    print(str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
-          str(row[4]) + " ---- " + str(row[7]))
-    break
-
-# table_result1 = query1.execute()
-# table_result1.print()
-# with table_result1.collect() as results:
-#     for row in results:
-#         print(str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[3]) + " ---- " + str(row[5]))
+# for row in table_result1.collect():
+#     print(str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
+#           str(row[4]) + " ---- " + str(row[7]))
+#     break
