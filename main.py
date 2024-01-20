@@ -16,7 +16,6 @@ jar_files_str = ";".join(jar_files)
 
 # Set the configuration
 env = StreamExecutionEnvironment.get_execution_environment()
-# env.set_runtime_mode(RuntimeExecutionMode.STREAMING)
 table_env = StreamTableEnvironment.create(env)
 table_env.get_config().set("pipeline.jars", jar_files_str)
 table_env.get_config().set("parallelism.default", "4")

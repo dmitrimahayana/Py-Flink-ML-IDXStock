@@ -29,6 +29,7 @@ table_env = StreamTableEnvironment.create(env)
 table_env.get_config().set("pipeline.jars", jar_files_str)
 table_env.get_config().set("parallelism.default", "4")
 
+# Kafka Config
 topic1 = "KSQLTABLEGROUPSTOCK"  # KSQLDB Table
 group = "flink-group-idx-stock-mongodb-consumer"
 kafka_bootstrap_server = "localhost:19092,localhost:19093,localhost:19094"
