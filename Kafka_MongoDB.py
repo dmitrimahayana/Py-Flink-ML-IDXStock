@@ -1,5 +1,3 @@
-import random
-import time
 from pyflink.table import *
 from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
 from pyflink.table.expressions import col
@@ -90,19 +88,11 @@ table_env.execute_sql("CREATE TABLE flink_stock_update (" +
                       "  'collection' = 'flink-stock-stream'" +
                       ");")
 
-while True:
-    try:
-        table_env.execute_sql(f"""
-            INSERT INTO flink_stock_update
-            SELECT `stockid`, `ticker`, `date`, `open`, `high`, `low`, `close`, `volume` FROM filtered_ksql_groupstock;
-        """)
+# Query Table API
+table_env.execute_sql(f"""
+    INSERT INTO flink_stock_update
+    SELECT `stockid`, `ticker`, `date`, `open`, `high`, `low`, `close`, `volume` FROM filtered_ksql_groupstock;
+""")
 
-        table_output2 = table_env.sql_query("SELECT _id, `ticker`, `date`, `close` FROM flink_stock_update")
-        table_output2.execute().print()
-
-    except KeyboardInterrupt:
-        print("Shutdown Starting...")
-        break
-    except Exception as e:
-        # Handle any exceptions that may occur
-        print(f"An error occurred: {str(e)}")
+table_output2 = table_env.sql_query("SELECT _id, `ticker`, `date`, `close` FROM flink_stock_update")
+table_output2.execute().print()

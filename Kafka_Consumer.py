@@ -1,6 +1,5 @@
 from pyflink.table import *
 from pyflink.datastream import StreamExecutionEnvironment, RuntimeExecutionMode
-from pyflink.table.expressions import col
 
 # Prepare your JAR file URIs
 jars_path = "D:/00%20Project/00%20My%20Project/Jars/Kafka%201.18/"
@@ -44,14 +43,6 @@ table_env.execute_sql("CREATE TABLE flink_mongodb_stock (" +
                       "   'database' = 'kafka'," +
                       "   'collection' = 'ksql-stock-stream'" +
                       ");")
-
-# Define a query
-# query1 = table_env.sql_query("SELECT * FROM (" +
-#                               "SELECT " +
-#                               "*, " +
-#                               "ROW_NUMBER() OVER (PARTITION BY `ticker` ORDER BY `date` DESC) AS row_num " +
-#                               "FROM flink_mongodb_stock " +
-#                               ") WHERE row_num <= 10 AND `date` = '2023-07-28'")
 
 # Define a query
 table_output = table_env.sql_query("SELECT * FROM flink_mongodb_stock LIMIT 10")
@@ -107,14 +98,6 @@ table_env.execute_sql("CREATE TABLE flink_ksql_groupcompany (" +
                       ")")
 
 # Define a query
-# table_output1 = table_env.sql_query("SELECT * FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2023-06-2%'") \
-    # .select(col("TICKER").alias("ticker"),
-    #         col("DATE").alias("date"),
-    #         col("OPEN").alias("open"),
-    #         col("HIGH").alias("high"),
-    #         col("LOW").alias("low"),
-    #         col("CLOSE").alias("close"),
-    #         col("VOLUME").alias("volume"))
 table_output1 = table_env.sql_query("SELECT `STOCKID`, `DATE`, `TICKER`, `CLOSE` FROM flink_ksql_groupstock WHERE `DATE` LIKE '%2024-01%'")
 
 # Define a query
@@ -138,14 +121,3 @@ table_output2 = table_env.sql_query("SELECT " +
 # Execute Table
 table_result1 = table_output1.execute()
 table_result1.print()
-# for row in table_env.to_data_stream(table_output1).execute_and_collect():
-#     print("Datastream: " + str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
-#           str(row[5]) + " ---- " + str(row[6]))
-# break
-# df_mongodb = table_output1.limit(100).to_pandas()
-# print("Dataframe: ", df_mongodb.head(10))
-# table_result2 = table_output2.execute()
-# for row in table_result1.collect():
-#     print(str(row[0]) + " ---- " + str(row[1]) + " ---- " + str(row[2]) + " ---- " +
-#           str(row[4]) + " ---- " + str(row[7]))
-#     break
